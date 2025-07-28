@@ -15,7 +15,7 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run Ravly server",
-	RunE:   runRun,
+	RunE:  runRun,
 }
 
 func init() {
@@ -23,9 +23,9 @@ func init() {
 }
 
 func runRun(cmd *cobra.Command, args []string) error {
-  fmt.Println("Ravly is now running..")
+	fmt.Println("Ravly is now running..")
 
-  	for {
+	for {
 		if err := internal.BroadcastPresence(); err != nil {
 			return fmt.Errorf("Error sending upd: %w", err)
 		}
