@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	internal "github.com/aliamerj/ravly/internal/discovery"
+	"github.com/aliamerj/ravly/internal/discovery"
+	"github.com/aliamerj/ravly/internal/transfer"
 	"github.com/spf13/cobra"
 )
 
@@ -15,21 +16,32 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run Ravly server",
-	RunE:  runRun,
+	Run:   runRun,
 }
 
 func init() {
 	rootCmd.AddCommand(runCmd)
 }
 
-func runRun(cmd *cobra.Command, args []string) error {
+func runRun(cmd *cobra.Command, args []string) {
 	fmt.Println("Ravly is now running..")
+	go discoveryBroadcast()
+	go fileReceiver()
 
+  select{}
+}
+
+func discoveryBroadcast() {
 	for {
-		if err := internal.BroadcastPresence(); err != nil {
-			return fmt.Errorf("Error sending upd: %w", err)
+		if err := discovery.BroadcastPresence(); err != nil {
+			fmt.Println("❌ Error broadcasting:", err)
 		}
 		time.Sleep(3 * time.Second)
 	}
+}
 
+func fileReceiver() {
+	if err := transfer.StartServer("0.0.0.0:8989"); err != nil {
+		fmt.Println("❌ Error receiving files:", err)
+	}
 }
