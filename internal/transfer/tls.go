@@ -46,8 +46,9 @@ func generateTLSConfig() (*tls.Config, error) {
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		NextProtos:   []string{"ravly-quic-transfer"},
+		InsecureSkipVerify: true,
+		Certificates:       []tls.Certificate{cert},
+		NextProtos:         []string{"ravly-quic-transfer"},
 	}
 
 	return tlsConfig, nil

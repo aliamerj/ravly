@@ -14,7 +14,7 @@ type fileHeader struct {
 func writeHeader(w io.Writer, header fileHeader) error {
 	nameBytes := []byte(header.Filename)
 
-	if err := binary.Write(w, binary.LittleEndian, uint16(len(nameBytes))); err != nil {
+	if err := binary.Write(w, binary.BigEndian, uint32(len(nameBytes))); err != nil {
 		return err
 	}
 
@@ -22,27 +22,24 @@ func writeHeader(w io.Writer, header fileHeader) error {
 		return err
 	}
 
-	return binary.Write(w, binary.LittleEndian, uint16(header.Filesize))
+	return binary.Write(w, binary.BigEndian, header.Filesize)
 }
 
-func readHeader(r io.Reader) (fileHeader, error) {
-	var nameLen uint16
-	if err := binary.Read(r, binary.LittleEndian, &nameLen); err != nil {
-		return fileHeader{}, err
-	}
-
-	nameBytes := make([]byte, nameLen)
-	if _, err := io.ReadFull(r, nameBytes); err != nil {
-		return fileHeader{}, err
-	}
-
-	var size int64
-	if err := binary.Read(r, binary.LittleEndian, &size); err != nil {
-		return fileHeader{}, err
-	}
-
-	return fileHeader{
-		Filename: string(nameBytes),
-		Filesize: size,
-	}, nil
+func readHeader(stream io.Reader) (*fileHeader, error) {
+    var nameLen uint32
+    if err := binary.Read(stream, binary.BigEndian, &nameLen); err != nil {
+        return nil, err
+    }
+    nameBytes := make([]byte, nameLen)
+    if _, err := io.ReadFull(stream, nameBytes); err != nil {
+        return nil, err
+    }
+    var fileSize int64
+    if err := binary.Read(stream, binary.BigEndian, &fileSize); err != nil {
+        return nil, err
+    }
+    return &fileHeader{
+        Filename: string(nameBytes),
+        Filesize: fileSize,
+    }, nil
 }

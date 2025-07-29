@@ -4,12 +4,12 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"sort"
-	"sync"
 	"time"
 
-	"github.com/aliamerj/ravly/internal/discovery"
+	"github.com/aliamerj/ravly/daemon"
+	"github.com/aliamerj/ravly/daemon/proto"
 	"github.com/spf13/cobra"
 )
 
@@ -25,51 +25,32 @@ func init() {
 }
 
 func runDiscover(cmd *cobra.Command, args []string) error {
-	fmt.Println("🌟 Ravly Peer Discovery")
-	fmt.Println("-----------------------")
-	fmt.Println("🔍 Listening for peers... (Ctrl+C to exit)")
+	conn, err := daemon.Connect(DAEMON_ADDRESS)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	client := proto.NewDaemonServiceClient(conn)
 
-	// Track unique peers with last seen time
-	peers := make(map[string]string)
-	lastSeen := make(map[string]time.Time)
-	var mu sync.Mutex
-	var count int
+	fmt.Println("🌟 Live Discovery (press Ctrl+C to stop)")
+	fmt.Println("----------------------------------------")
 
-	return discovery.ListenForPeers(func(addr, host string) {
-		mu.Lock()
-		defer mu.Unlock()
+	seen := make(map[string]bool)
 
-		now := time.Now()
-
-		if _, exists := peers[addr]; !exists {
-			peers[addr] = host
-			count++
-		}
-		lastSeen[addr] = now
-
-		clearPreviousOutput(count)
-
-		fmt.Println("Discovered peers:")
-		fmt.Println("-----------------")
-
-		ips := make([]string, 0, len(peers))
-		for ip := range peers {
-			ips = append(ips, ip)
-		}
-		sort.Strings(ips)
-
-		for _, ip := range ips {
-			elapsed := time.Since(lastSeen[ip]).Round(time.Second)
-			fmt.Printf("🏠 %-15s %-20s (seen %v ago)\n", ip+":", peers[ip], elapsed)
+	for {
+		resp, err := client.ListPeers(context.Background(), &proto.Empty{})
+		if err != nil {
+			fmt.Println("❌ Error:", err)
+			break
 		}
 
-		fmt.Printf("\n🔍 Listening for peers... (found %d, Ctrl+C to exit)", count)
-	})
-}
-
-func clearPreviousOutput(lineCount int) {
-	// Move cursor up and clear from cursor to end of screen
-	// 5 extra lines for headers/footers
-	fmt.Printf("\033[%dA", lineCount+5)
-	fmt.Print("\033[J")
+		for _, p := range resp.Peers {
+			if !seen[p.Ip] {
+				fmt.Printf("🔎 New peer: %-15s %-20s\n", p.Ip, p.Hostname)
+				seen[p.Ip] = true
+			}
+		}
+		time.Sleep(3 * time.Second)
+	}
+	return nil
 }

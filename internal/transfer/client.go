@@ -9,11 +9,13 @@ import (
 	"github.com/quic-go/quic-go"
 )
 
-func SendFile(addr, filePath string) error {
+func SendFile(ip, filePath string, port int) error {
 	tlsConfig, err := generateTLSConfig()
 	if err != nil {
 		return err
 	}
+  addr := fmt.Sprintf("%s:%d", ip, port)
+  
 	conn, err := quic.DialAddr(context.TODO(), addr, tlsConfig, nil)
 	if err != nil {
 		return err

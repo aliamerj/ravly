@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+option go_package = "/proto";
+
+package daemon;
+
+
+service DaemonService {
+  rpc SetConfig(Config) returns (Empty);
+  rpc GetConfig(Empty) returns (Config);
+
+  rpc ListPeers(Empty) returns (PeerList);
+  rpc BroadcastPresence(Empty) returns (Empty);
+
+
+  rpc SendFile(SendFileRequest) returns (Empty);
+  rpc ListReceivedFiles(Empty) returns (ReceivedFileList);
+}
+
+message Empty {}
+
+message Config {
+  string name = 1;              
+  int32 port = 2;               
+  int32 discovery_port = 3;     
+  string recv_dir = 4;          
+  bool auto_accept = 5;     
+}
+
+message Peer {
+  string ip = 1;
+  string hostname = 2;
+  string last_seen = 3;
+}
+
+message PeerList {
+  repeated Peer peers = 1;
+}
+
+
+message SendFileRequest {
+  string file_path = 1;
+  string target_ip = 2;
+}
+
+message ReceivedFile {
+  string file_name = 1;
+  string received_at = 2;
+  string sender_ip = 3;
+}
+
+message ReceivedFileList {
+  repeated ReceivedFile files = 1;
+}

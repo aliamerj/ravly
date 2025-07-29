@@ -7,13 +7,18 @@ import (
 )
 
 const (
-	broadcastAddr = "255.255.255.255:9999"
+	broadcastAddr = "255.255.255.255"
 	discoveryMsg  = "ravly::hello"
 )
 
+type Peer struct {
+	Name string
+	Ip   string
+}
+
 // BroadcastPresence sends a UDP broadcast packet.
-func BroadcastPresence() error {
-	raddr, err := net.ResolveUDPAddr("udp", broadcastAddr)
+func BroadcastPresence(name string, port int) error {
+	raddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", broadcastAddr, port))
 	if err != nil {
 		return err
 	}
@@ -24,18 +29,25 @@ func BroadcastPresence() error {
 	}
 	defer conn.Close()
 
-	myIP := strings.Split(conn.LocalAddr().String(), ":")[0]
-	hostName, err := net.LookupAddr(myIP)
+	hostName := name
+	if name == "" {
+		myIP := strings.Split(conn.LocalAddr().String(), ":")[0]
+		host, err := net.LookupAddr(myIP)
+		if err != nil {
+			return err
+		}
+		hostName = host[0]
+	}
 
-	if _, err := conn.Write([]byte(discoveryMsg + ">" + hostName[0])); err != nil {
+	if _, err := conn.Write([]byte(discoveryMsg + ">" + hostName)); err != nil {
 		return err
 	}
 	return nil
 }
 
 // ListenForPeers listens for UDP discovery messages.
-func ListenForPeers(callback func(addr, host string)) error {
-	ladd, err := net.ResolveUDPAddr("udp", ":9999")
+func ListenForPeers(port int, callback func(peer Peer)) error {
+  ladd, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return err
 	}
@@ -59,7 +71,10 @@ func ListenForPeers(callback func(addr, host string)) error {
 		msg := strings.Split(string(buf[:n]), ">")
 		ip := remoteAddr.IP.String()
 		if len(msg) == 2 && msg[0] == discoveryMsg && ip != myIP {
-			callback(remoteAddr.IP.String(), msg[1])
+			callback(Peer{
+				Name: msg[1],
+				Ip:   remoteAddr.IP.String(),
+			})
 		}
 	}
 }
