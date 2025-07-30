@@ -2,7 +2,7 @@
 
 Ravly is a lightweight developer tool for discovering devices and securely transferring files over a local/private network without requiring internet or third-party services. Inspired by tools like AirDrop, Ravly is designed to be cross-platform, terminal-native, and developer-friendly.
 
-⚠️ **Note**: Ravly is in active development. The interface and features are not yet stable, and many capabilities are still in progress.
+⚠️ **Note**: Ravly is just prototype. The interface and features are not yet stable, and many capabilities are still in progress.
 
 ---
 
